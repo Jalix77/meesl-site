@@ -1,14 +1,154 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String              @id @default(cuid())
+  email        String              @unique
+  name         String
+  phone        String?
+  passwordHash String              @map("password_hash")
+  role         Role                @default(member)
+  isActive     Boolean             @default(true) @map("is_active")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+  donations    Donation[]
+  eventLinks   EventRegistration[]
+  groupLinks   GroupMember[]
+  profile      Profile?
+
+  @@map("users")
+}
+
+model Profile {
+  userId  String  @id @map("user_id")
+  address String?
+  city    String?
+  country String?
+  notes   String?
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("profiles")
+}
+
+model Donation {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  amountHTG Int?     @map("amount_htg")
+  amountUSD Int?     @map("amount_usd")
+  method    String
+  reference String?
+  donatedAt DateTime @default(now()) @map("donated_at")
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([donatedAt])
+  @@map("donations")
+}
+
+model Group {
+  id          String        @id @default(cuid())
+  name        String        @unique
+  description String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  members     GroupMember[]
+
+  @@map("groups")
+}
+
+model GroupMember {
+  userId  String @map("user_id")
+  groupId String @map("group_id")
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+  @@map("group_members")
+}
+
+model Event {
+  id            String              @id @default(cuid())
+  title         String
+  description   String?
+  startAt       DateTime            @map("start_at")
+  endAt         DateTime?           @map("end_at")
+  location      String?
+  isPublic      Boolean             @default(true) @map("is_public")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  registrations EventRegistration[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  userId  String @map("user_id")
+  eventId String @map("event_id")
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  @@map("event_registrations")
+}
+
+model Page {
+  id        String        @id @default(cuid())
+  slug      String        @unique
+  title     String
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  sections  PageSection[]
+
+  @@map("pages")
+}
+
+model PageSection {
+  id        String   @id @default(cuid())
+  pageId    String   @map("page_id")
+  key       String
+  title     String?
+  body      String
+  order     Int
+  isEnabled Boolean  @default(true) @map("is_enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, key])
+  @@map("page_sections")
+}
+
+model SiteSetting {
+  id        String      @id @default(cuid())
+  key       String      @unique
+  value     String
+  type      SettingType
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@map("site_settings")
+}
+
+model FileAsset {
+  id        String      @id @default(cuid())
+  name      String
+  folder    String      @default("uploads")
+  mimeType  String      @map("mime_type")
+  size      Int
+  url       String
+  storage   StorageType @default(vercel_blob)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@map("file_assets")
 }
 
 enum Role {
@@ -26,156 +166,4 @@ enum SettingType {
 
 enum StorageType {
   vercel_blob
-}
-
-model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  name         String
-  phone        String?
-  passwordHash String    @map("password_hash")
-  role         Role      @default(member)
-  isActive     Boolean   @default(true) @map("is_active")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
-
-  profile      Profile?
-  donations    Donation[]
-  groupLinks   GroupMember[]
-  eventLinks   EventRegistration[]
-
-  @@map("users")
-}
-
-model Profile {
-  userId   String  @id @map("user_id")
-  address  String?
-  city     String?
-  country  String?
-  notes    String?
-  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("profiles")
-}
-
-model Donation {
-  id         String    @id @default(cuid())
-  userId     String    @map("user_id")
-  amountHTG  Int?      @map("amount_htg")
-  amountUSD  Int?      @map("amount_usd")
-  method     String
-  reference  String?
-  donatedAt  DateTime  @default(now()) @map("donated_at")
-  note       String?
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([donatedAt])
-  @@map("donations")
-}
-
-model Group {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  members GroupMember[]
-
-  @@map("groups")
-}
-
-model GroupMember {
-  userId  String @map("user_id")
-  groupId String @map("group_id")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
-
-  @@id([userId, groupId])
-  @@map("group_members")
-}
-
-model Event {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  startAt     DateTime  @map("start_at")
-  endAt       DateTime? @map("end_at")
-  location    String?
-  isPublic    Boolean   @default(true) @map("is_public")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  registrations EventRegistration[]
-
-  @@map("events")
-}
-
-model EventRegistration {
-  userId  String @map("user_id")
-  eventId String @map("event_id")
-
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
-
-  @@id([userId, eventId])
-  @@map("event_registrations")
-}
-
-// CMS Models
-model Page {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  title     String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  sections PageSection[]
-
-  @@map("pages")
-}
-
-model PageSection {
-  id         String   @id @default(cuid())
-  pageId     String   @map("page_id")
-  key        String
-  title      String?
-  body       String   // markdown or rich text
-  order      Int
-  isEnabled  Boolean  @default(true) @map("is_enabled")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
-
-  @@unique([pageId, key])
-  @@map("page_sections")
-}
-
-model SiteSetting {
-  id        String       @id @default(cuid())
-  key       String       @unique
-  value     String
-  type      SettingType
-  updatedAt DateTime     @updatedAt @map("updated_at")
-
-  @@map("site_settings")
-}
-
-model FileAsset {
-  id        String       @id @default(cuid())
-  name      String
-  folder    String       @default("uploads")
-  mimeType  String       @map("mime_type")
-  size      Int
-  url       String
-  storage   StorageType  @default(vercel_blob)
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-
-  @@map("file_assets")
 }
