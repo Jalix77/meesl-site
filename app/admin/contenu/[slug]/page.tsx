@@ -26,7 +26,7 @@ interface Page {
 export default function AdminContentEditor() {
   const params = useParams()
   const router = useRouter()
-  const [page, setPage] = useState<Page | null>(null)
+  const [page, setPage] = useState<Partial<Page> | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -82,11 +82,12 @@ export default function AdminContentEditor() {
       })
 
       if (response.ok) {
-        setPage({
-          ...page,
-          sections: page.sections.map(s => 
-            s.id === sectionId ? { ...s, ...updates } : s
-          )
+        setPage(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+          sections: (prev.sections ?? []).filter(s => s.id !== sectionId),
+          }
         })
       }
     } catch (error) {
@@ -103,9 +104,12 @@ export default function AdminContentEditor() {
       })
 
       if (response.ok) {
-        setPage({
-          ...page,
-          sections: page.sections.filter(s => s.id !== sectionId)
+        setPage(prev => {
+          if (!prev) return prev
+          return {
+            ...prev,
+          sections: (prev.sections ?? []).filter(s => s.id !== sectionId),
+          }
         })
       }
     } catch (error) {
@@ -127,7 +131,7 @@ export default function AdminContentEditor() {
         const newSection = await response.json()
         setPage({
           ...page,
-          sections: [...page.sections, newSection].sort((a, b) => a.order - b.order)
+          sections: [...(page.sections ?? []), newSection].sort((a, b) => a.order - b.order)
         })
         setNewSectionModal(false)
       }
@@ -139,7 +143,7 @@ export default function AdminContentEditor() {
   const reorderSections = async (sectionId: string, direction: 'up' | 'down') => {
     if (!page) return
 
-    const sections = [...page.sections]
+    const sections = [...(page.sections ?? [])]
     const index = sections.findIndex(s => s.id === sectionId)
     
     if (index === -1) return
@@ -241,7 +245,7 @@ export default function AdminContentEditor() {
         {showPreview ? (
           <div className="bg-white rounded-lg shadow-sm p-8">
             <div className="prose prose-lg max-w-none">
-              {page.sections
+              {(page.sections ?? [])
                 .filter(s => s.isEnabled)
                 .sort((a, b) => a.order - b.order)
                 .map((section) => (
@@ -258,7 +262,7 @@ export default function AdminContentEditor() {
           </div>
         ) : (
           <div className="space-y-6">
-            {page.sections
+            {(page.sections ?? [])
               .sort((a, b) => a.order - b.order)
               .map((section, index) => (
                 <div key={section.id} className="bg-white rounded-lg shadow-sm">
@@ -302,7 +306,7 @@ export default function AdminContentEditor() {
                         </button>
                         <button
                           onClick={() => reorderSections(section.id, 'down')}
-                          disabled={index === page.sections.length - 1}
+                          disabled={index === (page.sections ?? []).length - 1}
                           className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
                         >
                           ↓
@@ -341,7 +345,7 @@ export default function AdminContentEditor() {
                 key: formData.get('key') as string,
                 title: formData.get('title') as string,
                 body: formData.get('body') as string,
-                order: page.sections.length + 1,
+                order: (page.sections ?? []).length + 1,
                 isEnabled: true
               })
             }}>

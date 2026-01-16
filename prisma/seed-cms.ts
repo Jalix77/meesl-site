@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, SettingType } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
@@ -127,22 +127,22 @@ Nous sommes engagés à partager l'Évangile localement et globalement.`,
     {
       key: 'address',
       value: '4, Delmas 48, Port-au-Prince, Haïti',
-      type: 'text',
+      type: SettingType.text,
     },
     {
       key: 'whatsapp',
       value: '+509 37 97 1717',
-      type: 'text',
+      type: SettingType.text,
     },
     {
       key: 'phone',
       value: '+509 37 97 1717',
-      type: 'text',
+      type: SettingType.text,
     },
     {
       key: 'email',
       value: 'contact@meesl.org',
-      type: 'text',
+      type: SettingType.text,
     },
     {
       key: 'schedule',
@@ -151,7 +151,7 @@ Nous sommes engagés à partager l'Évangile localement et globalement.`,
         mercredi: { etude_biblique: '17h - 19h' },
         samedi: { jeunesse: '15h - 17h', femmes: '2e et 4e samedis 10h' },
       }),
-      type: 'json',
+      type: SettingType.json,
     },
     {
       key: 'donations',
@@ -170,7 +170,7 @@ Nous sommes engagés à partager l'Évangile localement et globalement.`,
           name: 'MEESL',
         },
       }),
-      type: 'json',
+      type: SettingType.json,
     },
     {
       key: 'leadership',
@@ -181,17 +181,17 @@ Nous sommes engagés à partager l'Évangile localement et globalement.`,
         { name: 'Sœur Anne Sophie', role: 'Directrice Femmes', email: 'as@meesl.org' },
         { name: 'Frère Paul Jean', role: 'Directeur Jeunesse', email: 'pj@meesl.org' },
       ]),
-      type: 'json',
+      type: SettingType.json,
     },
     {
       key: 'logoUrl',
       value: '/images/LOGO_MEESL.png',
-      type: 'url',
+      type: SettingType.url,
     },
     {
       key: 'constitutionPdfUrl',
       value: '/files/constitution-meesl.pdf',
-      type: 'url',
+      type: SettingType.url,
     },
   ]
 
