@@ -1,30 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
-const pageSchema = z.object({
-  title: z.string().min(1),
+const pageUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
 })
 
-// GET /api/admin/pages/[slug]
+function isAdmin(session: any) {
+  const role = session?.user?.role
+  return role && String(role).toLowerCase() === 'admin'
+}
+
+// GET /api/admin/pages/[slug]  -> used by the editor to load the page + sections
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session?.user?.role || session.user.role !== 'admin') {
+    const session = await getServerSession(authOptions)
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const page = await prisma.page.findUnique({
       where: { slug: params.slug },
       include: {
-        sections: {
-          orderBy: { order: 'asc' }
-        }
-      }
+        sections: { orderBy: { order: 'asc' } },
+      },
     })
 
     if (!page) {
@@ -38,31 +42,26 @@ export async function GET(
   }
 }
 
-// PATCH /api/admin/pages/[slug]
+// PATCH /api/admin/pages/[slug] -> used to update page title
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session?.user?.role || session.user.role !== 'admin') {
+    const session = await getServerSession(authOptions)
+    if (!isAdmin(session)) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
-    const validatedData = pageSchema.parse(body)
+    const data = pageUpdateSchema.parse(body)
 
-    const page = await prisma.page.update({
+    const updated = await prisma.page.update({
       where: { slug: params.slug },
-      data: validatedData,
-      include: {
-        sections: {
-          orderBy: { order: 'asc' }
-        }
-      }
+      data,
     })
 
-    return NextResponse.json(page)
+    return NextResponse.json(updated)
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
