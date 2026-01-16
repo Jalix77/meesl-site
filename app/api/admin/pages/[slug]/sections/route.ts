@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
@@ -17,13 +18,40 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session?.user?.role || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const validatedData = sectionSchema.parse(body)
+// GET /api/admin/pages/[slug]
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    const role = (session?.user as any)?.role
+    if (!role || String(role).toLowerCase() !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const page = await prisma.page.findUnique({
+      where: { slug: params.slug },
+      include: { sections: { orderBy: { order: 'asc' } } },
+    })
+
+    if (!page) {
+      return NextResponse.json({ error: 'Page not found' }, { status: 404 })
+    }
+
+    return NextResponse.json(page)
+  } catch (error) {
+    console.error('Error fetching page:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
     // Get the page first
     const page = await prisma.page.findUnique({
