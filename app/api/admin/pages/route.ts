@@ -21,7 +21,8 @@ const sectionSchema = z.object({
 export async function GET() {
   try {
     const session = await getServerSession()
-    if (!session?.user?.role || session.user.role !== 'admin') {
+    const role = (session?.user as any)?.role
+    if (!role || String(role).toLowerCase() !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -45,7 +46,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession()
-    if (!session?.user?.role || session.user.role !== 'admin') {
+    const role = (session?.user as any)?.role
+    if (!role || String(role).toLowerCase() !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
