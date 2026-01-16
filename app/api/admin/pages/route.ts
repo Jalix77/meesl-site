@@ -24,7 +24,15 @@ export async function GET() {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role
     if (!role || String(role).toLowerCase() !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          hasSession: Boolean(session),
+          role: role ?? null,
+          userKeys: session?.user ? Object.keys(session.user as any) : [],
+        },
+        { status: 401 }
+      )
     }
 
     const pages = await prisma.page.findMany({
@@ -49,7 +57,15 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions)
     const role = (session?.user as any)?.role
     if (!role || String(role).toLowerCase() !== 'admin') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json(
+        {
+          error: 'Unauthorized',
+          hasSession: Boolean(session),
+          role: role ?? null,
+          userKeys: session?.user ? Object.keys(session.user as any) : [],
+        },
+        { status: 401 }
+      )
     }
 
     const body = await request.json()
